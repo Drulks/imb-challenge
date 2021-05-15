@@ -1,0 +1,20 @@
+{
+  "env": {
+    "commonjs": true,
+    "es2021": true,
+    "node": true
+  },
+  "extends": "eslint:recommended",
+  "parserOptions": {
+    "ecmaVersion": 12
+  },
+  "rules": {
+    "no-unused-vars": "off",
+    "no-extra-semi": "warn",
+    "semi": "warn",
+    "no-irregular-whitespace": "warn",
+    "no-trailing-spaces": "warn",
+    "constructor-super": "off"
+  },
+  "ignorePatterns": ["**/dist/**", "**/qiib/**", "**/*.test.js"]
+}
