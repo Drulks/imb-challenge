@@ -3,6 +3,7 @@ import * as bcrypt from 'bcrypt';
 import User from "../models/user.model";
 import UserAddressRepository from '../repositories/user-address.repository';
 import UserRepository from "../repositories/user.repository";
+import IBGEService from './ibge.service';
 
 export type UserExtraInfo = keyof Omit<User, "id" | "email" | "name">
 
@@ -10,6 +11,7 @@ export default class UserService {
     constructor(
         private IUserRepository = UserRepository,
         private IUserAddressRepository = UserAddressRepository,
+        private ibgeService = new IBGEService()
     ) { }
 
     async getUserById(id: number, extraInfo: UserExtraInfo[] = []) {
@@ -26,8 +28,14 @@ export default class UserService {
     }
 
     async save(user: User, password: string) {
-        const userRepository = new (this.IUserRepository)();
+        if (!user.address) { throw ReferenceError('Missing Address'); }
+        const city = await this.ibgeService.getCity(user.address.city.ibgeId);
+        if (city) {
+            user.address.city.UF = city.UF;
+            user.address.city.name = city.name;
+        } else { throw ReferenceError('City not found'); }
 
+        const userRepository = new (this.IUserRepository)();
         const passwordToken = await bcrypt.hash(password, 10);
         return await userRepository.save(user, passwordToken);
     }
