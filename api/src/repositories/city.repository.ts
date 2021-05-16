@@ -23,7 +23,6 @@ export default class CityRepository extends SqliteRepository {
         try {
             await this._saveCity(city);
         } catch (error) {
-            console.log('Save City', error)
             if (error.code === 'SQLITE_CONSTRAINT') {
                 await new (this.IStateRepository)(this).save(city.UF);
                 await this._saveCity(city);
