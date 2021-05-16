@@ -11,8 +11,18 @@ const authControllerRegister: FastifyPluginCallback = function (instance, opts, 
 
     instance.post('/register', async (req, res) => {
         const data = req.body as (User & { password: string })
-        await userService.save(new User(data), data.password);
-        res.send();
+        const user = await userService.save(new User(data), data.password);
+        const token = await jwt.sign(
+            { id: user.id, email: user.email, name: user.name },
+            CONFIG.JWT_PRIVATE_KEY,
+            { expiresIn: '30m' }
+        )
+        res.setCookie(
+            CONFIG.AUTH_COOKIENAME, token, {
+            httpOnly: true,
+            secure: CONFIG.PRODUCTION,
+            path: '/'
+        }).code(200).send()
     });
 
     instance.post('/authenticate', async (req, res) => {
@@ -27,7 +37,8 @@ const authControllerRegister: FastifyPluginCallback = function (instance, opts, 
             res.setCookie(
                 CONFIG.AUTH_COOKIENAME, token, {
                 httpOnly: true,
-                secure: CONFIG.PRODUCTION
+                secure: CONFIG.PRODUCTION,
+                path: '/'
             }).code(200).send()
         } else {
             res.code(400).send('Wrong email or password')

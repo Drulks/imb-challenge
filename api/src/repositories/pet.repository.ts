@@ -25,15 +25,20 @@ export default class PetRepository extends SqliteRepository {
     }
 
     async save(pet: Pet, user: User) {
+        this.uow.autocommit = false;
         try {
             if (!pet.breed.id) {
                 pet.breed = await new (this.IPetBreedRepository)(this).save(pet.breed);
             }
-            return await this._savePet(pet, user)
+            const savedPet = await this._savePet(pet, user)
+            this.uow.commit();
+            return savedPet;
         } catch (error) {
             if (error.code === 'SQLITE_CONSTRAINT') {
                 await new (this.ICityRepository)(this).save(pet.city);
                 return await this._savePet(pet, user);
+            } else {
+                throw error;
             }
         }
     }
@@ -46,7 +51,6 @@ export default class PetRepository extends SqliteRepository {
             pet.id = result.lastID;
             return pet;
         })
-
     }
 
     async getAllWithPagination({ petSpecieId, petBreedId, cityId, userId, page, limit }: GetAllFilter & { page?: number, limit?: number } = {}) {
@@ -57,38 +61,37 @@ export default class PetRepository extends SqliteRepository {
         const values = [];
 
         if (petSpecieId) {
-            conditions.push('pet_specie_id = ?');
+            conditions.push('p.pet_specie_id = ?');
             values.push(petSpecieId);
         }
         if (petBreedId) {
-            conditions.push('pet_breed_id = ?');
+            conditions.push('p.pet_breed_id = ?');
             values.push(petBreedId);
         }
         if (cityId) {
-            conditions.push('city_id = ?');
+            conditions.push('p.city_id = ?');
             values.push(cityId);
         }
         if (userId) {
-            conditions.push('registered_by = ?');
+            conditions.push('p.registered_by = ?');
             values.push(userId);
         }
 
         let whereText = '';
         if (conditions.length) {
-            whereText = `WHERE ${conditions.join(' AND ')}`;
+            whereText = ` WHERE ${conditions.join(' AND ')} `;
         }
-
         const result = await this.uow.query(
-            `SELECT p.*, \ 
+            `SELECT p.id, p.name, p.city_id, p.pet_breed_id, p.pet_specie_id, \ 
                     city.uf as city_uf, city.name as city_name, \ 
                     breed.name as breed_name, \ 
                     specie.name as specie_name \ 
             FROM ${this.ownRef.nomeTabela} p \
                 LEFT JOIN ${this.ICityRepository.nomeTabela} city ON p.city_id = city.ibge_id \ 
                 LEFT JOIN ${this.IPetBreedRepository.nomeTabela} breed ON p.pet_breed_id = breed.id \ 
-                LEFT JOIN ${this.IPetSpecieRepository.nomeTabela} specie ON breed.pet_specie_id = specie.id \ 
+                LEFT JOIN ${this.IPetSpecieRepository.nomeTabela} specie ON p.pet_specie_id = specie.id \ 
             ${whereText} \ 
-            ORDER BY id ASC LIMIT ${limit} OFFSET ${page * limit}`,
+            ORDER BY p.id ASC LIMIT ${limit} OFFSET ${page * limit}`,
             values
         ).then(results => results.map(result => new Pet({
             id: result.id,
@@ -99,7 +102,7 @@ export default class PetRepository extends SqliteRepository {
                 specie: new PetSpecie({ id: result.pet_specie_id, name: result.specie_name })
             })
         })));
-        const total = await this.uow.query(`SELECT count(*) as total FROM ${this.ownRef.nomeTabela} ${whereText} ORDER BY id ASC LIMIT ${limit} OFFSET ${page * limit}`)
+        const total = await this.uow.query(`SELECT count(*) as total FROM ${this.ownRef.nomeTabela} p ${whereText} ORDER BY id ASC LIMIT ${limit} OFFSET ${page * limit}`)
             .then(results => Number(results[0].total));
 
         return { result, pagination: { total, page, limit } };
@@ -109,7 +112,7 @@ export default class PetRepository extends SqliteRepository {
     getResposibleInfo(petId: number) {
         return this.uow.query(`SELECT u.* FROM ${this.ownRef.nomeTabela} p
             LEFT JOIN ${this.IUserRepository.nomeTabela} u ON p.registered_by = u.id
-        WHERE id = ?`, [petId])
+        WHERE p.id = ?`, [petId])
             .then(results => results[0])
             .then(result => ({ email: String(result.email), name: String(result.name) }));
     }

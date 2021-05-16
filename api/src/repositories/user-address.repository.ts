@@ -37,6 +37,8 @@ export default class UserAddressRepository extends SqliteRepository {
             if (error.code === 'SQLITE_CONSTRAINT') {
                 await new (this.ICityRepository)(this).save(address.city);
                 await this._saveAddress(userId, address);
+            } else {
+                throw error;
             }
         }
     }

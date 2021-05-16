@@ -26,11 +26,15 @@ export default function getUserHandle(required = false, extraInfos: UserExtraInf
         const cookie = req.cookies || {}
         const authToken = cookie[CONFIG.AUTH_COOKIENAME];
         try {
-            if (!authToken && required) { throw new Error('Needed to be logged in') }
-            const obj = await jwt.verify(authToken, CONFIG.JWT_PRIVATE_KEY) as { id: number, email: string, name: string };
-            req.user = await userService.getUserById(obj.id, extraInfos);
+            let user: User | undefined;
+            if (authToken) {
+                const obj = await jwt.verify(authToken, CONFIG.JWT_PRIVATE_KEY) as { id: number, email: string, name: string };
+                user = await userService.getUserById(obj.id, extraInfos);
+            }
+            if (!user && required) { throw new Error('Needed to be logged in') }
+            req.user = user;
         } catch (error) {
-            res.clearCookie(CONFIG.AUTH_COOKIENAME).code(401).send();
+            res.setCookie(CONFIG.AUTH_COOKIENAME, '', { expires: new Date() }).code(401).send();
         }
     }
 }

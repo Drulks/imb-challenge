@@ -17,7 +17,6 @@ export default class SqliteUnitOfWork {
     async query(sqlQuery: string, params?: any[]) {
         if (!this.startedTransaction && this.useTransaction) {
             await this.asyncQuery('BEGIN TRANSACTION');
-            console.log('Transaction started!')
             this.startedTransaction = true;
         }
         try {
@@ -31,10 +30,12 @@ export default class SqliteUnitOfWork {
     }
 
     commit() {
+        this.startedTransaction = false;
         return this.asyncQuery('COMMIT');
     }
 
     rollback() {
+        this.startedTransaction = false;
         return this.asyncQuery('ROLLBACK');
     }
 

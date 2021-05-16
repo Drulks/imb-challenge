@@ -33,7 +33,6 @@ export default class UserRepository extends SqliteRepository {
             [user.email, user.name, passwordToken]
         ).then(result => user.id = result.lastID);
         await userAddressRepository.save(user.id as number, user.address as Address);
-        console.log(user.id);
         this.uow.commit();
         return user;
     }

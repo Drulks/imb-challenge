@@ -71,7 +71,7 @@ async function createSchema(uow: SqliteUnitOfWork) {
     await uow.query(`INSERT INTO pet_specie(name) VALUES('Cachorro'),('Gato');`);
     await uow.query(`CREATE TABLE pet_breed(
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        pet_specie_id INTEGER,
+                        pet_specie_id INTEGER ,
                         name VARCHAR(64),
                         FOREIGN KEY(pet_specie_id) REFERENCES pet_specie(id)
                     );`).then(() => console.log('Created table pet_breed'));
@@ -83,7 +83,7 @@ async function createSchema(uow: SqliteUnitOfWork) {
                         city_id INTEGER,
                         registered_by INTEGER,
                         FOREIGN KEY(pet_breed_id) REFERENCES pet_breed(id),
-                        FOREIGN KEY(pet_specie_id) REFERENCES pet_breed(pet_specie_id),
+                        FOREIGN KEY(pet_specie_id) REFERENCES pet_specie(id),
                         FOREIGN KEY(city_id) REFERENCES city(ibge_id),
                         FOREIGN KEY(registered_by) REFERENCES user(id)
                     );`).then(() => console.log('Created table pet'));

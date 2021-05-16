@@ -13,7 +13,6 @@ export default class PetService {
         private IPetRepository = PetRepository,
         private IPetBreedRepository = PetBreedRepository,
         private IPetSpecieRepository = PetSpecieRepository,
-        private IUserRepository = UserRepository,
         private ibgeService = new IBGEService()
     ) { }
 
@@ -48,7 +47,7 @@ export default class PetService {
         } else { throw ReferenceError('City not found'); }
 
         const petRepository = new (this.IPetRepository)();
-        return petRepository.save(pet, user);
+        return await petRepository.save(pet, user);
     }
 
     async getPetCarerContact(petId:number) {

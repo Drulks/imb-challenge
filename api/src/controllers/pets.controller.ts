@@ -10,7 +10,7 @@ const petsControllerRegister: FastifyPluginCallback = function (server, opts, do
     server.get('/species', async (req, res) => {
         res.send(await petService.getSpecies());
     });
-    
+
     server.get('/species/:specieId/breeds', async (req, res) => {
         const params = req.params as { specieId: number }
         const query = req.query as { name?: string }
@@ -31,7 +31,11 @@ const petsControllerRegister: FastifyPluginCallback = function (server, opts, do
         const pet = req.body as Pet;
         res.send(await petService.save(pet, req.user as User));
     });
-
+    server.get('/:petId/carer-contact', { preHandler: getUserHandle(true) }, async (req, res) => {
+        const params = req.params as { petId: number };
+        res.send(await petService.getPetCarerContact(params.petId));
+    });
+    
     done();
 }
 

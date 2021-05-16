@@ -26,6 +26,8 @@ export default class CityRepository extends SqliteRepository {
             if (error.code === 'SQLITE_CONSTRAINT') {
                 await new (this.IStateRepository)(this).save(city.UF);
                 await this._saveCity(city);
+            } else {
+                throw error;
             }
         }
     }
